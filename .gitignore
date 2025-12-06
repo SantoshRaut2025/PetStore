@@ -1,0 +1,74 @@
+# Visual Studio / .NET
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build Folders
+bin/
+obj/
+out/
+/publish/
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# Rider
+.idea/
+
+# Resharper
+_ReSharper*/
+*.DotSettings.user
+
+# Logs
+*.log
+logs/
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Secrets and certificates
+secrets.json
+*.pfx
+*.p12
+.env
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml
+
+# Test results
+TestResults/
+
+# Node modules
+node_modules/
+
+# Database files
+*.mdf
+*.ldf
+*.db
+
+# Ignore development-only appsettings
+appsettings.Development.json
+appsettings.Local.json
+
+# CI
+/.azure-pipelines/
+
+# Misc
+*.cache
+*.log
+*.bak
+
+# Ignore publish output for dotnet publish
+/PublishOutput/
+
+# Keep this file tracked
+!.gitignore
