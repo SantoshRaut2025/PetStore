@@ -11,7 +11,7 @@ builder.Services.AddDbContext<ProductService.Data.ProductDBContext>(options =>
 });
 
 builder.Services.AddScoped<ProductService.Services.IProductService, ProductService.Services.ProductService>();
-
+builder.Services.AddSingleton<ProductService.Services.ICacheService, ProductService.Services.CacheService>();
 
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
