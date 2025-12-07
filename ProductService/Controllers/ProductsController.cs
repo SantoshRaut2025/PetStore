@@ -29,7 +29,7 @@ namespace ProductService.Controllers
             return Ok();
         }
 
-        [HttpPatch("{id}")] 
+        [HttpPut("{id}")] 
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO productDto)
         {
             var updatedProduct = await _productService.UpdateProductAsync(productDto,id);
@@ -39,7 +39,7 @@ namespace ProductService.Controllers
             }
             return Ok(updatedProduct);
         }
-
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {

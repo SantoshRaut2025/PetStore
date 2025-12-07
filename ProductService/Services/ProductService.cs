@@ -12,15 +12,15 @@ namespace ProductService.Services
     {
         private readonly IMapper _mapper;
         private readonly IProductRepository _productRepository;
-        private readonly IMemoryCache _cache;
-        private readonly IDistributedCache _distCache;
+        private readonly ICacheService _cacheService;
+        private readonly ILogger<ProductService> _logger;
 
-        public ProductService(IMapper mapper, IProductRepository productRepository, IMemoryCache cache, IDistributedCache distCache)
+        public ProductService(IMapper mapper, IProductRepository productRepository, ICacheService cacheService, ILogger<ProductService> logger)
         {
             _mapper = mapper;
             _productRepository = productRepository;
-            _cache = cache;
-            _distCache = distCache;
+            _cacheService = cacheService;
+            _logger = logger;
         }
 
         public Product ConvertToProduct(ProductDTO dto)
@@ -38,62 +38,47 @@ namespace ProductService.Services
             string cacheKey = "all_products";
             try
             {
-                var cachedData = await _distCache.GetStringAsync(cacheKey);
-                var cachedProducts = _cache.Get<List<ProductDTO>>(cacheKey);
-
-                if (cachedData !=null || cachedProducts !=null)
-
+                _logger.LogInformation("Trying to get from Redis cache");
+                var products = await _cacheService.GetAsync<List<ProductDTO>>(cacheKey);
+                if(products == null)
                 {
-                    return JsonSerializer.Deserialize<List<ProductDTO>>(cachedData);
+                     _logger.LogInformation("Cache MISS - Fetching from database");
+                    var productEntities = await _productRepository.GetAllProductsAsync();
+                    products = [.. productEntities.Select(p => ConvertToDTO(p))];
+                    await _cacheService.SetAsync(cacheKey, products, TimeSpan.FromMinutes(10));
                 }
                 else
                 {
-                    var products = await _productRepository.GetAllProductsAsync();
-                    var productDTOs = products.Select(p => ConvertToDTO(p)).ToList();
-                    var cacheEntryOptions = new MemoryCacheEntryOptions
-                    { 
-                        AbsoluteExpirationRelativeToNow = (TimeSpan.FromMinutes(10)),
-                        SlidingExpiration = (TimeSpan.FromMinutes(5))
-                    };
-                    _cache.Set(cacheKey, productDTOs, cacheEntryOptions);
-                    _distCache.SetString(cacheKey, JsonSerializer.Serialize(productDTOs), new DistributedCacheEntryOptions
-                    {
-                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
-                        SlidingExpiration = TimeSpan.FromMinutes(5)
-                    });
-                    return productDTOs;
+                    _logger.LogInformation("Cache HIT - Returning from Redis");
                 }
+                return products;
             }   
             catch (Exception ex)
             {
-                // Log the exception (logging mechanism not shown here)
-                throw;
+                _logger.LogError(ex, "Error getting from Redis cache for key: {Key}", cacheKey);
+                return [];
             }
         }
 
         public async Task AddProductAsync(ProductDTO dto)
         {
-            
             var product = ConvertToProduct(dto);
-            await _productRepository.AddProduct(product);            
+            await _productRepository.AddProduct(product); 
+             // Invalidate cache
+            await _cacheService.RemoveAsync("all_products");           
         }
 
         public async Task<ProductDTO?> GetProductByIdAsync(int id)
         {
             string cacheKey = $"Product_{id}";
-
-            if (!_cache.TryGetValue(cacheKey, out ProductDTO? productDto))
+            var productDto = await _cacheService.GetAsync<ProductDTO>(cacheKey);
+            if (productDto == null)
             {
-               var  product = await _productRepository.GetProductByIdAsync(id);
-                if(product == null)
+                var product = await _productRepository.GetProductByIdAsync(id);
+                if (product == null)
                     return null;
                 productDto = ConvertToDTO(product);
-                _cache.Set(cacheKey, productDto, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
-                    SlidingExpiration = TimeSpan.FromMinutes(5)
-                });               
-              
+                await _cacheService.SetAsync(cacheKey, productDto, TimeSpan.FromMinutes(10));
             }
             
             return productDto;
@@ -107,6 +92,9 @@ namespace ProductService.Services
                 existingProduct.Name = dto.Name;
                 existingProduct.Price = dto.Price;
                 existingProduct.Description = dto.Description;
+                // Invalidate specific and list caches
+                await _cacheService.RemoveAsync($"Product_{id}");
+                await _cacheService.RemoveAsync("all_products");
                 return await _productRepository.UpdateProductAsync(existingProduct);
             }
             return false;
@@ -114,6 +102,9 @@ namespace ProductService.Services
 
         public async Task DeleteProductAsync(int id)
         {
+            // Invalidate specific and list caches
+            await _cacheService.RemoveAsync($"Product_{id}");
+            await _cacheService.RemoveAsync("all_products");
             await _productRepository.DeleteProduct(id);// Simulate async operation
         }
     }
