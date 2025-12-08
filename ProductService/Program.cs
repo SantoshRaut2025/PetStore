@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProductService.Dtos;
+using ProductService.Middlewares;
 using ProductService.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,8 +35,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();// Enforce HTTP Strict Transport Security (HSTS) in production
+}
 
-app.UseHttpsRedirection();
+ app.UseHttpsRedirection();
+
+ app.UseApiKeyMiddleware();
+
 
 app.UseAuthorization();
 
