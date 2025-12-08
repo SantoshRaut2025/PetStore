@@ -1,6 +1,8 @@
 @ProductService_HostAddress = http://localhost:5160
 
-GET {{ProductService_HostAddress}}/weatherforecast/
+GET {{ProductService_HostAddress}}/api/products/
 Accept: application/json
+Header: X-API-Key: PetStoreApiKey_12345
+
 
 ###
