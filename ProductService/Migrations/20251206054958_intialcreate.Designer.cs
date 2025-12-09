@@ -12,7 +12,7 @@ namespace ProductService.Migrations
 {
     [DbContext(typeof(ProductDBContext))]
     [Migration("20251206054958_intialcreate")]
-    partial class intialcreate
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

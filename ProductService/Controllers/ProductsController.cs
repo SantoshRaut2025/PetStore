@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ProductService.Dtos;
 using ProductService.Services;
-
+using Microsoft.AspNetCore.Authorization;
 namespace ProductService.Controllers
 {
 
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProductsController : ControllerBase
     {
         
@@ -19,6 +20,9 @@ namespace ProductService.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts()
         {
+            // Get current user info from token
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var username = User.Identity?.Name;
             var products = await _productService.GetAllProductsAsync();
             return Ok(products);
         }
