@@ -13,6 +13,13 @@
 
         public async Task InvokeAsync(HttpContext context)
         {
+            // Skip API key check for auth endpoints (e.g., login/register)
+            if (context.Request.Path.StartsWithSegments("/api/auth", StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
             if (!context.Request.Headers.TryGetValue(ApiKeyHeader, out var extractedApiKey))
             {
                 context.Response.StatusCode = 401; // Unauthorized
