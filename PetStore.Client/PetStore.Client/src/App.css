@@ -1,0 +1,175 @@
+:root {
+  color-scheme: light;
+  --primary: #ff8c42; /* warm orange */
+  --secondary: #2eb0a1; /* teal */
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #4b5563;
+  --border: #e5e7eb;
+  background-color: var(--bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  max-width: 100vw;
+  margin: 0 auto;
+  padding: 24px 24px;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, #fff7ed 0, transparent 35%),
+    radial-gradient(circle at 80% 10%, #e0f7f4 0, transparent 30%),
+    radial-gradient(circle at 50% 80%, #fff4e6 0, transparent 35%);
+  padding-bottom: 32px;
+}
+
+.app-content {
+  width: 100%;
+  background: transparent;
+  border-radius: 0;
+  padding: 0 0 8px 0;
+  box-shadow: none;
+  text-align: left;
+  border: none;
+}
+
+.app-content h1 {
+  margin: 0 0 8px 0;
+  color: var(--text);
+}
+
+.app-content p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.carousel__viewport {
+  overflow: hidden;
+  width: 100%;
+}
+
+.carousel__track {
+  display: flex;
+  transition: transform 0.4s ease;
+}
+
+.carousel__slide {
+  min-width: 100%;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.hero-card {
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  max-height: 360px;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-card__body {
+  padding: 14px 16px 18px 16px;
+}
+
+.hero-card__body h3 {
+  margin: 0 0 6px 0;
+  color: var(--text);
+}
+
+.hero-card__body p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.carousel__nav {
+  border: none;
+  background: rgba(0, 0, 0, 0.08);
+  color: #111827;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.carousel__nav:hover {
+  background: rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.carousel__nav--prev {
+  margin-left: 4px;
+}
+
+.carousel__nav--next {
+  margin-right: 4px;
+}
+
+.carousel__dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.carousel__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.carousel__dot.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.05);
+}

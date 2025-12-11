@@ -21,6 +21,16 @@ builder.Services.AddScoped<ProductService.Services.IProductService, ProductServi
 builder.Services.AddSingleton<ProductService.Services.ICacheService, ProductService.Services.CacheService>();
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost:5174")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 builder.Services.AddMemoryCache();
 builder.Services.AddStackExchangeRedisCache(options =>
 {
@@ -119,7 +129,14 @@ else
     app.UseHsts();// Enforce HTTP Strict Transport Security (HSTS) in production
 }
 
-app.UseHttpsRedirection();
+// In development we keep HTTP to avoid redirect issues with the React dev server.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseRouting();
+app.UseCors("AllowReactApp");
 app.UseApiKeyMiddleware();
 app.UseAuthentication();
 app.UseAuthorization();
