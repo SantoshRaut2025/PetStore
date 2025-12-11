@@ -1,13 +1,16 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using ProductService.Data;
 using ProductService.Dtos;
 using ProductService.Middlewares;
+using ProductService.Models;
 using ProductService.Repositories;
 using ProductService.Services;
-using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
@@ -16,6 +19,13 @@ builder.Services.AddDbContext<ProductService.Data.ProductDBContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+
+builder.Services.AddIdentity<User, IdentityRole>(options => {
+    // configure password, lockout, etc.
+})
+.AddEntityFrameworkStores<ProductDBContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddScoped<ProductService.Services.IProductService, ProductService.Services.ProductService>();
 builder.Services.AddSingleton<ProductService.Services.ICacheService, ProductService.Services.CacheService>();
@@ -27,6 +37,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
     options.InstanceName = "ProductService_";
 });
+builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key not configured");

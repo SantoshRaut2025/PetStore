@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ProductService.Services;
+using Microsoft.EntityFrameworkCore;
 using ProductService.Models;
+using ProductService.Services;
 
 namespace ProductService.Controllers
 {
@@ -11,10 +13,14 @@ namespace ProductService.Controllers
     {
         private readonly IJwtService _jwtService;
         private readonly ILogger<AuthController> _logger;
-        public AuthController(IJwtService jwtService, ILogger<AuthController> logger)
+        private readonly LoginService _loginService;
+        private readonly UserManager<User> _userManager;
+
+        public AuthController(IJwtService jwtService, ILogger<AuthController> logger, LoginService loginService)
         {
             _jwtService = jwtService;
             _logger = logger;
+            _loginService = loginService;
         }
 
         [AllowAnonymous]
@@ -79,6 +85,42 @@ namespace ProductService.Controllers
 
             return Ok(new { message = "Registration endpoint - implement your logic here" });
         }
-        
+
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+
+            var refreshToken = request.RefreshToken;
+
+            // 1. Find the user associated with the refresh token
+            var user = await _userManager.Users.FirstOrDefaultAsync(u =>
+                u.RefreshToken == refreshToken &&
+                u.RefreshTokenExpiryTime > DateTime.UtcNow);
+
+            if (user == null)
+            {
+                return Unauthorized("Invalid or expired refresh token.");
+            }
+
+            // 2. Generate a NEW access token (and optionally a new refresh token)
+            var newAccessToken = _jwtService.GenerateToken(user);
+
+            // Optional: Rotate the refresh token for better security
+            //var newRefreshToken = GenerateRefreshToken();
+            //user.RefreshToken = newRefreshToken;
+            //user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            //await _userManager.UpdateAsync(user);
+
+            // 3. Return the new tokens
+            return Ok(new AuthResult
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = refreshToken
+
+            });
+
+
+        }
     }
 }

@@ -15,39 +15,109 @@ ILogger<CacheService> logger)
     // Implementation of asynchronous methods
     public async Task<T?> GetAsync<T>(string key)
     {
-       try
+        try
         {
+            // Try distributed cache first
             var cachedData = await _distributedCache.GetStringAsync(key);
-            
-            if (string.IsNullOrEmpty(cachedData))
-                return default;
-
-            return JsonSerializer.Deserialize<T>(cachedData);
+            if (!string.IsNullOrEmpty(cachedData))
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<T>(cachedData);
+                }
+                catch (JsonException jex)
+                {
+                    _logger.LogWarning(jex, "Failed to deserialize distributed cache value for key: {Key}", key);
+                    // Fall through to memory cache attempt
+                }
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting from Redis cache for key: {Key}", key);
-            return default;
+            _logger.LogError(ex, "Error getting from Redis (distributed cache) for key: {Key}. Falling back to in-memory cache.", key);
+            // Fall back to memory cache below
         }
+
+        // Fallback to in-memory cache
+        try
+        {
+            if (_memoryCache.TryGetValue(key, out T? value))
+            {
+                _logger.LogDebug("Returned value from in-memory cache for key: {Key}", key);
+                return value;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting from in-memory cache for key: {Key}", key);
+        }
+
+        return default;
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null)
     {
+        var distributedExpiration = expiration ?? TimeSpan.FromMinutes(10);
+        var memoryExpiration = expiration ?? TimeSpan.FromMinutes(5);
+
+        // Prepare distributed cache options
+        var options = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = distributedExpiration
+        };
+
+        // Serialize once
+        string serializedData;
         try
         {
-            var serializedData = JsonSerializer.Serialize(value);
-            
-            var options = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromMinutes(10)
-            };
-
-            await _distributedCache.SetStringAsync(key, serializedData, options);
-            _logger.LogInformation("Data cached in Redis with key: {Key}", key);
+            serializedData = JsonSerializer.Serialize(value);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error setting Redis cache for key: {Key}", key);
+            _logger.LogError(ex, "Error serializing value for key: {Key}. Aborting cache set.", key);
+            return;
+        }
+
+        // Try to set distributed cache; if it fails, fallback to in-memory cache.
+        try
+        {
+            await _distributedCache.SetStringAsync(key, serializedData, options);
+            _logger.LogInformation("Data cached in distributed cache (Redis) with key: {Key}", key);
+
+            // Also populate in-memory cache for fast local access
+            try
+            {
+                var memoryOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = memoryExpiration
+                };
+                _memoryCache.Set(key, value, memoryOptions);
+            }
+            catch (Exception memEx)
+            {
+                _logger.LogWarning(memEx, "Failed to set in-memory cache after distributed cache set for key: {Key}", key);
+            }
+
+            return;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting distributed cache for key: {Key}. Falling back to in-memory cache.", key);
+        }
+
+        // Fallback: set in-memory cache
+        try
+        {
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = memoryExpiration
+            };
+            _memoryCache.Set(key, value, cacheOptions);
+            _logger.LogInformation("Data cached in in-memory cache with key: {Key}", key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting in-memory cache for key: {Key}", key);
         }
     }
 

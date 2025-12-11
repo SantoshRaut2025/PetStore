@@ -1,15 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using ProductService.Models;
 
 namespace ProductService.Services;
-public interface IJwtService
-    {
-        string GenerateToken(string userId, string username, string email, List<string>? roles = null);
-        ClaimsPrincipal? ValidateToken(string token);
-    }
 
 public class JwtService : IJwtService
 {
@@ -55,6 +51,12 @@ public class JwtService : IJwtService
             return string.Empty;
         }
     }
+
+    public string GenerateToken(IdentityUser user)
+    {
+      return GenerateToken(user.Id, user.UserName ?? string.Empty, user.Email ?? string.Empty);
+    }
+
     public ClaimsPrincipal? ValidateToken(string token)
     {
         try
