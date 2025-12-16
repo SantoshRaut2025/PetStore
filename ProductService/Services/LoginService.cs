@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using ProductService.Data;
 using ProductService.Models;
 
 namespace ProductService.Services
